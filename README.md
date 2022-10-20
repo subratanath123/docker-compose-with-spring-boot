@@ -4,27 +4,99 @@ This code shows how to build an image and automate the integration testing with 
 
 ## Docker file
 ```sh
-    FROM gradle:4.7.0-jdk8-alpine AS build
-    COPY . /home/gradle/src
-    RUN gradle build --no-daemon
-    FROM openjdk:8-jre-slim
-    EXPOSE 8080
-    RUN mkdir /app
-    
-    COPY --from=build /home/gradle/src/build/libs/*.jar /app/spring-boot-application.jar
-    ENTRYPOINT ["java", "-jar","/app/spring-boot-application.jar"]
+FROM openjdk:8-jdk-alpine AS build
+WORKDIR /app
+
+#COPY build.gradle  ./
+#COPY src/ ./
+#COPY gradlew  ./
+#COPY gradle ./
+#COPY .gradle ./
+#COPY settings.gradle  ./
+#COPY src ./
+
+#########################
+#Alternate way to do this is to copy all
+#########################
+COPY . ./
+
+########################
+#The default user in docker exec is the same user used to start the container which can be set in docker run or your compose file.
+#########################
+#RUN groupadd -r subrata && useradd -r -g subrata subrata
+#USER subrata
+#RUN chown subrata .gradle/
+
+#########################
+#Run gradle wrapper
+#########################
+RUN  ./gradlew build --no-daemon --stacktrace
+
+
+LABEL maintainer="Subrata Nath"
+
+#########################
+# If needed we can install curl and apt-get update inside docker container
+#########################
+#RUN apt-get update
+#RUN apt-get install curl
+#RUN curl -O https://www-eu.apache.org/dist/tomcat/tomcat-8/v8.5.40/bin/apache-tomcat-8.5.40.tar.gz
+#RUN tar xvfz apache*.tar.gz
+
+#########################
+# If you wish to deploy jar manully to tomcat then fetch tomcat image from dockerhub repo and then do this to deploy
+#########################
+#COPY --from=build /home/gradle/src/build/libs/First-Docker-app-web-0.0.1-SNAPSHOT.jar /usr/local/tomcat/webapps/spring-boot-application.jar
+
+#########################
+# Exposing 8080 port of the docker to the host machine
+# Host machine then will map a port to outer world during docker run or docker compose
+#########################
+EXPOSE 8080
+
+#########################
+# This is entrypoint when running the image. Just trigger the project run
+# ENTRYPOINT instruction is used to set executables that will always run when the container is initiated.
+#########################
+ENTRYPOINT ["./gradlew","bootRun"]
 ```
 ## Include this in docker-compose.yml
 ```sh
-    web:
-        build: .
-        dockerfile: Dockerfile
-        links:
-            - hello
-        ports:
-            - "80:80"
-    hello:
-        image: hello-world
+  services:
+  dev:
+    build: .
+    image: my-web-app-dev
+    environment:
+      USER: subrata
+    ports:
+      - "8080:8080"
+    networks:
+      - my-shared-network
+    volumes:
+      - type: volume
+        source: tmp
+        target: /tmp
+    depends_on:
+      - prod
+
+  prod:
+    build: .
+    image: my-web-app-prod
+    environment:
+      USER: subrata
+    ports:
+      - "8081:8080"
+    networks:
+      - my-shared-network
+    volumes:
+      - type: volume
+        source: tmp
+        target: /tmp
+
+networks:
+  my-shared-network: { }
+volumes:
+  tmp:
 ```
 
 # After that build the image with docker compose
