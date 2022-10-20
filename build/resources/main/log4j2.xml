@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="WARN" monitorInterval="5">
+
+    <appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+
+            <PatternLayout>
+                <pattern>%d [%t] IP:%X{ipAddr} H:%X{host} S:%X{source} U:%X{user} A:%X{hashedAuthId} [%c:%L] %p - %m%n%rEx</pattern>
+            </PatternLayout>
+        </Console>
+
+        <RollingFile name="FileAppender"
+                     fileName="/tmp/dockerapp.log"
+                     filePattern="/tmp/auth-server.${sys:auth-server.hostName}-%d{MM-dd-yyyy}.log.gz">
+            <PatternLayout>
+                <pattern>%d [%t] IP:%X{ipAddr} H:%X{host} S:%X{source} U:%X{user} A:%X{hashedAuthId} [%c:%L] %p - %m%n%rEx</pattern>
+            </PatternLayout>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+        </RollingFile>
+
+
+        <Async name="Async" bufferSize="2048" includeLocation="true">
+            <AppenderRef ref="FileAppender"/>
+            <AppenderRef ref="Console"/>
+        </Async>
+
+    </appenders>
+
+    <loggers>
+        <root level="trace">
+            <appender-ref ref="Async"/>
+        </root>
+    </loggers>
+</configuration>

@@ -1,0 +1,35 @@
+services:
+  dev:
+    build: .
+    image: my-web-app-dev
+    environment:
+      USER: subrata
+    ports:
+      - "8080:8080"
+    networks:
+      - my-shared-network
+    volumes:
+      - type: volume
+        source: tmp
+        target: /tmp
+    depends_on:
+      - prod
+
+  prod:
+    build: .
+    image: my-web-app-prod
+    environment:
+      USER: subrata
+    ports:
+      - "8081:8080"
+    networks:
+      - my-shared-network
+    volumes:
+      - type: volume
+        source: tmp
+        target: /tmp
+
+networks:
+  my-shared-network: { }
+volumes:
+  tmp:
